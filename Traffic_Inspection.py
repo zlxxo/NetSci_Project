@@ -89,6 +89,54 @@ def find_shortest_path(city_graph, node_pair, plot=False):
                                edge_color='red', width=2)
         plt.show()
 
+def get_random_graph():
+    # Create a random graph for demonstration
+    G = nx.erdos_renyi_graph(20, 0.2)
+    return G
+
+def calculate_edge_heatmap(paths, num_nodes):
+    # Initialize a matrix to store the number of paths passing through each edge
+    heatmap_matrix = np.zeros((num_nodes, num_nodes))
+
+    for path in paths:
+        for i in range(len(path) - 1):
+            heatmap_matrix[path[i], path[i + 1]] += 1
+            heatmap_matrix[path[i + 1], path[i]] += 1
+
+    return heatmap_matrix
+
+def plot_paths_as_heatmap(graph, heatmap_matrix):
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    pos = {node: (graph.nodes[node]['x'], graph.nodes[node]['y']) for node in graph.nodes}
+
+    # Draw the graph
+    nx.draw(graph, pos, node_size=2)
+
+    # Normalize the heatmap matrix for colormap intensity
+    normalized_heatmap = heatmap_matrix / np.max(heatmap_matrix)
+
+    # Draw edges with colormap intensity
+    edges = graph.edges()
+    colors = [normalized_heatmap[u][v] for u, v in edges]
+    nx.draw_networkx_edges(graph, pos, edgelist=edges, edge_color=colors, edge_cmap=plt.cm.YlOrRd, width=2)
+
+    plt.show()
+
+def find_n_shortest_paths(city_graph, node_pairs, plot=False):
+    all_paths = []
+
+    # Find and store the shortest paths
+    for source, target in node_pairs:
+        shortest_path = nx.shortest_path(city_graph, source=source, target=target)
+        all_paths.append(shortest_path)
+
+    # Calculate the heatmap matrix
+    heatmap_matrix = calculate_edge_heatmap(all_paths, len(city_graph.nodes))
+
+    # Plot the graph with a heatmap-like effect
+    plot_paths_as_heatmap(city_graph, heatmap_matrix)
+
 def main(plot_graph=True):
     nodes_filepath = "data/nodes.txt"
     edges_filepath = "data/edges.txt"
@@ -108,13 +156,14 @@ def main(plot_graph=True):
     pairwise_dist = squareform(pdist(arr_XY))
 
     # number of furthest nodes to find
-    nr_furthest_nodes = 20
+    nr_furthest_nodes = 100
     furthest_nodes = furthest_n_nodes(pairwise_dist, nr_furthest_nodes)
 
-    # finds shortest path through city between two nodes and plots the path
-    find_shortest_path(city_graph, furthest_nodes[0], True)
+    # finds shortest path through city between two nodes
+    find_shortest_path(city_graph, furthest_nodes[0], False)
 
-    
+    # find n shortest paths through city between two nodes and plot the paths
+    find_n_shortest_paths(city_graph, furthest_nodes, True)
 
 
 if __name__ == "__main__":
