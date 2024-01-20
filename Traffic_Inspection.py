@@ -123,6 +123,16 @@ def plot_paths_as_heatmap(graph, heatmap_matrix):
 
     plt.show()
 
+def generate_n_agent(furthest_node_pairs, nr_of_agents):
+    indices = np.arange(len(furthest_node_pairs))
+    # sample uniformly
+    sampled_indices = np.random.choice(indices, size=nr_of_agents, replace=True)
+
+    # Choose pairs based on sampled indices
+    sampled_pairs = np.array(furthest_node_pairs)[sampled_indices]
+
+    return list(sampled_pairs)
+
 def find_n_shortest_paths(city_graph, node_pairs, plot=False):
     all_paths = []
 
@@ -156,14 +166,15 @@ def main(plot_graph=True):
     pairwise_dist = squareform(pdist(arr_XY))
 
     # number of furthest nodes to find
-    nr_furthest_nodes = 100
+    nr_furthest_nodes = 1000
     furthest_nodes = furthest_n_nodes(pairwise_dist, nr_furthest_nodes)
 
-    # finds shortest path through city between two nodes
-    find_shortest_path(city_graph, furthest_nodes[0], False)
+    # generate a number of agents, sampled from furthest node pairs
+    nr_of_agents = 5000
+    list_agents = generate_n_agent(furthest_nodes, nr_of_agents)
 
     # find n shortest paths through city between two nodes and plot the paths
-    find_n_shortest_paths(city_graph, furthest_nodes, True)
+    find_n_shortest_paths(city_graph, list_agents, True)
 
 
 if __name__ == "__main__":
