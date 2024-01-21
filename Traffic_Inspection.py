@@ -25,7 +25,7 @@ def build_graph(df_nodes, df_edges):
             x1, y1 = nodes[start]
             x2, y2 = nodes[end]
             edges[(start, end)] = (x1, y1, x2, y2, length)
-            city_graph.add_edge(start, end, length=length)
+            city_graph.add_edge(start, end, length=length, weight=1) # add default weight
 
     return city_graph
 
@@ -60,6 +60,19 @@ def plot_city(city_graph, k):
     plt.show()
     # """
 
+def high_value_indices(symmetric_matrix, threshold=100):
+    # Ensure the matrix is symmetric
+    assert (symmetric_matrix == symmetric_matrix.T).all(), "Matrix must be symmetric"
+
+    # Find indices where values are higher than the threshold
+    high_value_indices = np.where(np.triu(symmetric_matrix) > threshold)
+
+    # Convert indices to row and column indices
+    rows, cols = high_value_indices
+
+    return list(zip(rows, cols))
+
+
 def furthest_n_nodes(symmetric_matrix, n):
     flattened_upper_triangle = np.triu(symmetric_matrix).flatten()
     top_n_indices = np.argpartition(flattened_upper_triangle, -n)[-n:]
@@ -89,12 +102,8 @@ def find_shortest_path(city_graph, node_pair, plot=False):
                                edge_color='red', width=2)
         plt.show()
 
-def get_random_graph():
-    # Create a random graph for demonstration
-    G = nx.erdos_renyi_graph(20, 0.2)
-    return G
-
-def calculate_edge_heatmap(paths, num_nodes):
+def calculate_edge_heatmap(paths, city_graph):
+    num_nodes = len(city_graph.nodes)
     # Initialize a matrix to store the number of paths passing through each edge
     heatmap_matrix = np.zeros((num_nodes, num_nodes))
 
@@ -102,6 +111,15 @@ def calculate_edge_heatmap(paths, num_nodes):
         for i in range(len(path) - 1):
             heatmap_matrix[path[i], path[i + 1]] += 1
             heatmap_matrix[path[i + 1], path[i]] += 1
+
+    # Find indices where values are non-zero
+    rows, cols = np.nonzero(heatmap_matrix)
+
+    # divide heatmap values through weight to dampen colors with streets resistance
+    for node1, node2 in zip(rows, cols):
+        if city_graph.has_edge(node1, node2):
+            edge_data = city_graph[node1][node2]
+            heatmap_matrix[node1][node2] = heatmap_matrix[node1][node2] / edge_data['weight']
 
     return heatmap_matrix
 
@@ -142,10 +160,30 @@ def find_n_shortest_paths(city_graph, node_pairs, plot=False):
         all_paths.append(shortest_path)
 
     # Calculate the heatmap matrix
-    heatmap_matrix = calculate_edge_heatmap(all_paths, len(city_graph.nodes))
+    heatmap_matrix = calculate_edge_heatmap(all_paths, city_graph)
 
     # Plot the graph with a heatmap-like effect
-    plot_paths_as_heatmap(city_graph, heatmap_matrix)
+    if plot:
+        plot_paths_as_heatmap(city_graph, heatmap_matrix)
+    return heatmap_matrix
+
+
+def generate_graph_highways(city_graph, heatmap_edges):
+    n = 290 # top n busiest roads to be found
+    hw_weight = 4 # default highway weight
+
+    nodes_busiest_streets = high_value_indices(heatmap_edges, n)
+
+    for node_tuple in nodes_busiest_streets:
+        # Check if the edge exists
+        if city_graph.has_edge(node_tuple[0], node_tuple[1]):
+            # Retrieve the existing edge data
+            edge_data = city_graph[node_tuple[0]][node_tuple[1]]
+
+            # Add or update the 'weight' attribute
+            edge_data['weight'] = hw_weight  # Replace 5 with the desired weight value
+
+    return city_graph
 
 def main(plot_graph=True):
     nodes_filepath = "data/nodes.txt"
@@ -174,7 +212,14 @@ def main(plot_graph=True):
     list_agents = generate_n_agent(furthest_nodes, nr_of_agents)
 
     # find n shortest paths through city between two nodes and plot the paths
-    find_n_shortest_paths(city_graph, list_agents, True)
+    heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, True)
+
+    # use heatmap_edges to choose which streets to make highways
+    # simulate highways by adding weights to edges (low weight -> highway, higher weight -> street)
+    city_graph_hw = generate_graph_highways(city_graph, heatmap_edges)
+    heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, True)
+
+
 
 
 if __name__ == "__main__":
