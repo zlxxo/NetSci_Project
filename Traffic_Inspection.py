@@ -123,13 +123,13 @@ def calculate_edge_heatmap(paths, city_graph):
 
     return heatmap_matrix
 
-def plot_paths_as_heatmap(graph, heatmap_matrix):
+def plot_paths_as_heatmap(graph, heatmap_matrix, title=None):
     fig, ax = plt.subplots(figsize=(8, 8))
 
     pos = {node: (graph.nodes[node]['x'], graph.nodes[node]['y']) for node in graph.nodes}
 
     # Draw the graph
-    nx.draw(graph, pos, node_size=2)
+    nx.draw_networkx_nodes(graph, pos, node_size=2)
 
     # Normalize the heatmap matrix for colormap intensity
     normalized_heatmap = heatmap_matrix / np.max(heatmap_matrix)
@@ -139,6 +139,9 @@ def plot_paths_as_heatmap(graph, heatmap_matrix):
     colors = [normalized_heatmap[u][v] for u, v in edges]
     nx.draw_networkx_edges(graph, pos, edgelist=edges, edge_color=colors, edge_cmap=plt.cm.YlOrRd, width=2)
 
+    if title:
+        ax.set_title(title)
+        plt.savefig(f'plots/{title.lower().replace(" ", "_")}.png')
     plt.show()
 
 def generate_n_agent(furthest_node_pairs, nr_of_agents):
@@ -151,7 +154,7 @@ def generate_n_agent(furthest_node_pairs, nr_of_agents):
 
     return list(sampled_pairs)
 
-def find_n_shortest_paths(city_graph, node_pairs, plot=False):
+def find_n_shortest_paths(city_graph, node_pairs, plot=False, title=None):
     all_paths = []
 
     # Find and store the shortest paths
@@ -164,7 +167,7 @@ def find_n_shortest_paths(city_graph, node_pairs, plot=False):
 
     # Plot the graph with a heatmap-like effect
     if plot:
-        plot_paths_as_heatmap(city_graph, heatmap_matrix)
+        plot_paths_as_heatmap(city_graph, heatmap_matrix, title=title)
     return heatmap_matrix
 
 
@@ -212,12 +215,12 @@ def main(plot_graph=True):
     list_agents = generate_n_agent(furthest_nodes, nr_of_agents)
 
     # find n shortest paths through city between two nodes and plot the paths
-    heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, True)
+    heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, plot=True, title="Shortest paths")
 
     # use heatmap_edges to choose which streets to make highways
     # simulate highways by adding weights to edges (low weight -> highway, higher weight -> street)
     city_graph_hw = generate_graph_highways(city_graph, heatmap_edges)
-    heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, True)
+    heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, plot=True, title="Highways")
 
 
 
