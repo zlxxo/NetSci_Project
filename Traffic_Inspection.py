@@ -81,15 +81,21 @@ def plot_city(city_graph, k):
     plt.show()
     # """
 
-def high_value_indices(symmetric_matrix, threshold=100):
+def high_value_indices(symmetric_matrix, top_n=100): #threshold=100):
     # Ensure the matrix is symmetric
     assert (symmetric_matrix == symmetric_matrix.T).all(), "Matrix must be symmetric"
 
     # Find indices where values are higher than the threshold
-    high_value_indices = np.where(np.triu(symmetric_matrix) > threshold)
+    #high_value_indices = np.where(np.triu(symmetric_matrix) > threshold)
+
+    # Find highest n indices
+    top_indices = np.argpartition(symmetric_matrix.flatten(), -top_n)[-top_n:]
+
+    # Convert the flattened indices back to 2D indices
+    top_indices = np.unravel_index(top_indices, symmetric_matrix.shape)
 
     # Convert indices to row and column indices
-    rows, cols = high_value_indices
+    rows, cols = top_indices
 
     return list(zip(rows, cols))
 
@@ -192,9 +198,11 @@ def find_n_shortest_paths(city_graph, node_pairs, plot=False, title=None):
     return heatmap_matrix
 
 
-def generate_graph_highways(city_graph, heatmap_edges):
+def generate_graph_highways(graph, heatmap_edges):
     n = 290 # top n busiest roads to be found
     hw_weight = 4 # default highway weight
+
+    city_graph = graph.copy()
 
     nodes_busiest_streets = high_value_indices(heatmap_edges, n)
 
@@ -235,15 +243,16 @@ def main(plot_graph=True):
     nr_of_agents = 5000
     list_agents = generate_n_agent(furthest_nodes, nr_of_agents)
 
-    print(list_agents)
+    #print(list_agents)
 
     # find n shortest paths through city between two nodes and plot the paths
-    heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, plot=True, title="Shortest paths")
+    heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, plot=False, title="Shortest paths")
 
     # use heatmap_edges to choose which streets to make highways
     # simulate highways by adding weights to edges (low weight -> highway, higher weight -> street)
     city_graph_hw = generate_graph_highways(city_graph, heatmap_edges)
     heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, plot=True, title="Highways")
+    #print(heatmap_edges)
 
 
 
