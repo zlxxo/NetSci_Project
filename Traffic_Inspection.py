@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 from scipy.spatial.distance import pdist, squareform
 
+np.random.seed(1234)
+
 def build_graph(df_nodes, df_edges):
     city_graph = nx.Graph()
     nodes = {}
@@ -34,13 +36,19 @@ def plot_city(city_graph, k):
     # adjust node size to show or not show nodes
     # """
     node_colors = [k[node] for node in city_graph.nodes]
-    cmap = plt.cm.viridis
+    cmap = plt.cm.YlOrRd
     norm = plt.Normalize(min(node_colors), max(node_colors))
     node_colors = [cmap(norm(degree)) for degree in node_colors]
 
+    edge_colors = [city_graph[u][v]['length'] for u, v in city_graph.edges()]
+    cmap2 = plt.cm.YlOrRd
+    norm2 = plt.Normalize(min(edge_colors), max(edge_colors))
+    edge_colors = [cmap2(norm2(length)) for length in edge_colors]
+
+    # draw nodes and their degree
     fig, ax = plt.subplots(figsize=(8, 8))
     pos = {node: (city_graph.nodes[node]['x'], city_graph.nodes[node]['y']) for node in city_graph.nodes}
-    nx.draw(city_graph, pos, node_size=5, node_color=node_colors)
+    nx.draw_networkx_nodes(city_graph, pos, node_size=5, node_color=node_colors)
 
     # add legend
     sm = ScalarMappable(cmap=cmap, norm=norm)
@@ -48,15 +56,28 @@ def plot_city(city_graph, k):
     cbar = plt.colorbar(sm, cax=cbar_ax, orientation='vertical', label='Node Degree')
 
     ax.set_title("City of Oldenburg")
-    plt.savefig('plots/city.png')
+    plt.savefig('plots/city-nodes.png')
     plt.show()
 
+    # draw edges color coded with respect to lenght
     fig, ax = plt.subplots(figsize=(8, 8))
-    pos = {node: (city_graph.nodes[node]['x'], city_graph.nodes[node]['y']) for node in city_graph.nodes}
-    nx.draw(city_graph, pos, node_size=0, node_color=node_colors)
+    nx.draw_networkx_edges(city_graph, pos, edge_color=edge_colors)
+
+    # add legend
+    sm = ScalarMappable(cmap=cmap2, norm=norm2)
+    cbar_ax = fig.add_axes([0.9, 0.1, 0.02, 0.8])  # Adjust these values to position the colorbar
+    cbar = plt.colorbar(sm, cax=cbar_ax, orientation='vertical', label='Edge length')
 
     ax.set_title("City of Oldenburg")
     plt.savefig('plots/city_egdes.png')
+    plt.show()
+
+    # draw edges balck
+    fig, ax = plt.subplots(figsize=(8, 8))
+    nx.draw_networkx_edges(city_graph, pos)
+
+    ax.set_title("City of Oldenburg")
+    plt.savefig('plots/city.png')
     plt.show()
     # """
 
@@ -129,7 +150,7 @@ def plot_paths_as_heatmap(graph, heatmap_matrix, title=None):
     pos = {node: (graph.nodes[node]['x'], graph.nodes[node]['y']) for node in graph.nodes}
 
     # Draw the graph
-    nx.draw_networkx_nodes(graph, pos, node_size=2)
+    #nx.draw_networkx_nodes(graph, pos, node_size=2)
 
     # Normalize the heatmap matrix for colormap intensity
     normalized_heatmap = heatmap_matrix / np.max(heatmap_matrix)
@@ -152,7 +173,7 @@ def generate_n_agent(furthest_node_pairs, nr_of_agents):
     # Choose pairs based on sampled indices
     sampled_pairs = np.array(furthest_node_pairs)[sampled_indices]
 
-    return list(sampled_pairs)
+    return sampled_pairs
 
 def find_n_shortest_paths(city_graph, node_pairs, plot=False, title=None):
     all_paths = []
@@ -213,6 +234,8 @@ def main(plot_graph=True):
     # generate a number of agents, sampled from furthest node pairs
     nr_of_agents = 5000
     list_agents = generate_n_agent(furthest_nodes, nr_of_agents)
+
+    print(list_agents)
 
     # find n shortest paths through city between two nodes and plot the paths
     heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, plot=True, title="Shortest paths")
