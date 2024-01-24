@@ -1,7 +1,8 @@
 import pandas as pd
-from Traffic_Inspection import build_graph
+#from Traffic_Inspection import build_graph
 import networkx as nx
 import json
+import os
 
 
 
@@ -180,6 +181,12 @@ def calc_metrics(city_graph):
     print("Metrics saved to network_metrics.json")
 
 def load_metrics(file_path="network_metrics.json"):
+    metrics_data = {}
+
+    if not os.path.isfile(file_path):
+        with open(file_path, "w") as json_file:
+            json.dump(metrics_data, json_file, indent=2)
+
     with open(file_path, "r") as json_file:
         metrics_data = json.load(json_file)
     

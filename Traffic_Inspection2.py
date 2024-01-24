@@ -4,6 +4,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 from scipy.spatial.distance import pdist, squareform
+from Metrics import node_betweenness, edge_betweenness, closeness, avg_shortest_path
+from Analysis import load_metrics
+import json
 
 np.random.seed(1234)
 
@@ -27,7 +30,7 @@ def build_graph(df_nodes, df_edges):
             x1, y1 = nodes[start]
             x2, y2 = nodes[end]
             edges[(start, end)] = (x1, y1, x2, y2, length)
-            city_graph.add_edge(start, end, length=length*1000., weight=4) # add default weight
+            city_graph.add_edge(start, end, length=length, weight=4) # add default weight
 
     return city_graph
 
@@ -234,13 +237,25 @@ def generate_graph_highways(graph, heatmap_edges, weight='weight'):
 def main(plot_graph=True):
     nodes_filepath = "data/nodes.txt"
     edges_filepath = "data/edges.txt"
+    metrics_filepath = "results/metrics.json"
 
     # load data
     df_nodes = pd.read_csv(nodes_filepath, sep=' ')
     df_edges = pd.read_csv(edges_filepath, sep=' ')
+    metrics_data = load_metrics(metrics_filepath)
+
 
     city_graph = build_graph(df_nodes, df_edges)
 
+    print('Calculating average path 1')
+    avg_path = avg_shortest_path(city_graph, weight_attr_name='weight')
+    metrics_data['orig_avg_path_w'] = avg_path
+
+    print('Calculating average path 2')
+    avg_path = avg_shortest_path(city_graph, weight_attr_name='length')
+    metrics_data['orig_avg_path_l'] = avg_path
+
+    #"""
     if plot_graph:
         k = dict(city_graph.degree())
         print(f'In the city graph the nodes have following degrees {np.unique(list(k.values()))}')
@@ -266,6 +281,11 @@ def main(plot_graph=True):
     city_graph_hw = generate_graph_highways(city_graph, heatmap_edges, weight='weight')
     heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, weight='weight', plot=True, title='Highways')
 
+    print('Calculating average path 3')
+    avg_path = avg_shortest_path(city_graph_hw, weight_attr_name='weight')
+    metrics_data['avg_path_w'] = avg_path
+
+
     # find n shortest paths through city between two nodes and plot the paths
     heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, weight='length', plot=True, title='Shortest path')
 
@@ -274,7 +294,14 @@ def main(plot_graph=True):
     city_graph_hw = generate_graph_highways(city_graph, heatmap_edges, weight='length')
     heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, weight='length', plot=True, title='Highway')
 
+    print('Calculating average path 4')
+    avg_path = avg_shortest_path(city_graph_hw, weight_attr_name='length')
+    metrics_data['avg_path_l'] = avg_path
 
+    # """
+
+    with open(metrics_filepath, "w") as json_file:
+        json.dump(metrics_data, json_file, indent=2)
 
 
 if __name__ == "__main__":
