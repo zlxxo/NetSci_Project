@@ -1,8 +1,17 @@
 {
   "orig_avg_path_w": 40.69041200142117,
   "orig_avg_path_l": 4667.391019604027,
-  "avg_path_1000_100_weight": 36.499767083224654,
-  "avg_path_1000_100_length": 4177.740673152866,
-  "avg_path_1000_200_weight": 31.05011891881158,
-  "avg_path_1000_200_length": 3538.0748255299272
+  "orig_resilience": 1,
+  "avg_path_1000_200_weight_w": 31.05011891881158,
+  "avg_path_1000_200_weight_l": 3269.1171654453387,
+  "resilience_1000_200_weight": 1,
+  "avg_path_1000_200_length_w": 35.43505244006964,
+  "avg_path_1000_200_length_l": 3538.0748255299272,
+  "resilience_1000_200_length": 1,
+  "avg_path_1000_200_weight_w2": 31.05011891881158,
+  "avg_path_1000_200_weight_l2": 4667.391019604027,
+  "resilience_1000_200_weight2": 1,
+  "avg_path_1000_200_length_w2": 35.43505244006964,
+  "avg_path_1000_200_length_l2": 4667.391019604027,
+  "resilience_1000_200_length2": 1
 }

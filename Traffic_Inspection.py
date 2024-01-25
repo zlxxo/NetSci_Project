@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 from scipy.spatial.distance import pdist, squareform
 from Metrics import node_betweenness, edge_betweenness, closeness, avg_shortest_path
-from Analysis import load_metrics
+from Analysis import load_metrics, calculate_resilience
 import json
 import heapq
 
@@ -227,7 +227,8 @@ def generate_graph_highways(graph, heatmap_edges, weight='weight'):
 
             # Add or update the 'weight' attribute
             #edge_data[weight] = hw_weight  # Replace 5 with the desired weight value
-            edge_data[weight] /= 4.
+            edge_data['weight'] /= 4.
+            #edge_data['length'] /= 4.
 
     return city_graph
 
@@ -243,20 +244,24 @@ def main(plot_graph=True):
 
     city_graph = build_graph(df_nodes, df_edges)
 
-    """
-    print('Calculating average path 1')
-    avg_path = avg_shortest_path(city_graph, weight_attr_name='weight')
-    metrics_data['orig_avg_path_w'] = avg_path
 
-    print('Calculating average path 2')
-    avg_path = avg_shortest_path(city_graph, weight_attr_name='length')
-    metrics_data['orig_avg_path_l'] = avg_path
-    #"""
 
     if plot_graph:
         k = dict(city_graph.degree())
         print(f'In the city graph the nodes have following degrees {np.unique(list(k.values()))}')
         plot_city(city_graph, k)
+
+        print('Calculating average path 1')
+        avg_path = avg_shortest_path(city_graph, weight_attr_name='weight')
+        metrics_data['orig_avg_path_w'] = avg_path
+
+        print('Calculating average path 2')
+        avg_path = avg_shortest_path(city_graph, weight_attr_name='length')
+        metrics_data['orig_avg_path_l'] = avg_path
+
+        print('Calculating resilience')
+        resilience = calculate_resilience(city_graph)
+        metrics_data[f'orig_resilience'] = resilience
 
     arr_XY = np.array([df_nodes['X'],df_nodes['Y']]).T
     pairwise_dist = squareform(pdist(arr_XY))
@@ -273,16 +278,26 @@ def main(plot_graph=True):
         print(f"Finding highways by {weight}")
 
         # find n shortest paths through city between two nodes and plot the paths
-        heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, weight=weight, plot=False, title='Shortest paths')
+        heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, weight=weight, plot=True, title='Shortest paths2')
 
         # use heatmap_edges to choose which streets to make highways
         # simulate highways by adding weights to edges (low weight -> highway, higher weight -> street)
         city_graph_hw = generate_graph_highways(city_graph, heatmap_edges, weight=weight)
-        heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, weight=weight, plot=False, title='Highways')
+        heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, weight="weight", plot=True, title=f'Highways2 {weight}')
 
-        print(f'Calculating average path by {weight}')
-        avg_path = avg_shortest_path(city_graph_hw, weight_attr_name=weight)
-        metrics_data[f'avg_path_{nr_furthest_nodes}_{n_edges_to_highway}_{weight}'] = avg_path
+        print(f'Calculating average path by weight')
+        avg_path = avg_shortest_path(city_graph_hw, weight_attr_name="weight")
+        metrics_data[f'avg_path_{nr_furthest_nodes}_{n_edges_to_highway}_{weight}_w2'] = avg_path
+
+        print(f'Calculating average path by length')
+        avg_path = avg_shortest_path(city_graph_hw, weight_attr_name="length")
+        metrics_data[f'avg_path_{nr_furthest_nodes}_{n_edges_to_highway}_{weight}_l2'] = avg_path
+
+        print('Calculating resilience')
+        resilience = calculate_resilience(city_graph_hw)
+        metrics_data[f'resilience_{nr_furthest_nodes}_{n_edges_to_highway}_{weight}2'] = resilience
+
+        print()
 
 
 
