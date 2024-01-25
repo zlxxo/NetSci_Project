@@ -7,7 +7,7 @@ from scipy.spatial.distance import pdist, squareform
 from Metrics import node_betweenness, edge_betweenness, closeness, avg_shortest_path
 from Analysis import load_metrics
 import json
-from tqdm import tqdm
+import heapq
 
 np.random.seed(1234)
 
@@ -197,7 +197,7 @@ def find_n_shortest_paths(city_graph, node_pairs, plot=False, title=None, weight
     #"""
     # Find and store the shortest paths
     for source, target in node_pairs:
-        shortest_path = nx.shortest_path(city_graph, source=source, target=target, weight=weight)
+        shortest_path = nx.shortest_path(city_graph, source=source, target=target, weight=weight) # djjikstra because we only have positive weights
         all_paths.append(shortest_path)
    #"""
 
@@ -241,7 +241,6 @@ def main(plot_graph=True):
     df_edges = pd.read_csv(edges_filepath, sep=' ')
     metrics_data = load_metrics(metrics_filepath)
 
-
     city_graph = build_graph(df_nodes, df_edges)
 
     """
@@ -274,18 +273,17 @@ def main(plot_graph=True):
         print(f"Finding highways by {weight}")
 
         # find n shortest paths through city between two nodes and plot the paths
-        heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, weight=weight, plot=True, title='Shortest paths')
+        heatmap_edges = find_n_shortest_paths(city_graph, furthest_nodes, weight=weight, plot=False, title='Shortest paths')
 
         # use heatmap_edges to choose which streets to make highways
         # simulate highways by adding weights to edges (low weight -> highway, higher weight -> street)
         city_graph_hw = generate_graph_highways(city_graph, heatmap_edges, weight=weight)
-        heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, weight=weight, plot=True, title='Highways')
+        heatmap_edges = find_n_shortest_paths(city_graph_hw, furthest_nodes, weight=weight, plot=False, title='Highways')
 
-        print('Calculating average path by weight')
+        print(f'Calculating average path by {weight}')
         avg_path = avg_shortest_path(city_graph_hw, weight_attr_name=weight)
         metrics_data[f'avg_path_{nr_furthest_nodes}_{n_edges_to_highway}_{weight}'] = avg_path
 
-        print()
 
 
     with open(metrics_filepath, "w") as json_file:
